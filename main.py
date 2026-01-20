@@ -69,7 +69,7 @@ def sections_menu():
 # --- ОБРОБНИКИ КОМАНД ---
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.answer("✅ Вітаю! Я бот-помічник з декларування УПО Полтавщини.\nОберіть потрібний пункт меню:", reply_markup=main_menu())
+    await message.answer("✅ Вітаю! Я бот-помічник з декларування працівників Департаменту поліції охорони.\nОберіть потрібний пункт меню:", reply_markup=main_menu())
 
 @dp.message(F.text == "📅 Терміни")
 async def terms(message: types.Message):
@@ -85,7 +85,7 @@ async def show_pm(message: types.Message):
 
 @dp.message(F.text == "📞 Адмін")
 async def contact(message: types.Message):
-    await message.answer("👤 **Адміністратор Кристина:**\n📞 +380932177380")
+    await message.answer("👤 **Адміністратор Христина:**\n📞 +380932177380")
 
 @dp.message(F.text == "⬅️ Назад")
 async def go_back(message: types.Message):
@@ -104,4 +104,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
+
     asyncio.run(main())
