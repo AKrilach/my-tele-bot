@@ -52,7 +52,7 @@ def sections_menu():
 # --- ОБРОБНИКИ КОМАНД ---
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.answer("✅ Вітаю! Я бот-помічник з декларування УПО Полтавщини.\nОберіть потрібний пункт меню:", reply_markup=main_menu())
+    await message.answer("✅ Вітаю! Я бот-помічник з декларування ДПО.\nОберіть потрібний пункт меню:", reply_markup=main_menu())
 
 @dp.message(F.text == "📅 Терміни")
 async def terms(message: types.Message):
@@ -97,3 +97,4 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
