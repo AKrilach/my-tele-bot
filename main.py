@@ -1,60 +1,54 @@
 import asyncio
 import logging
+import google.generativeai as genai
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 # --- КОНФІГУРАЦІЯ ---
-# Вставте ваш токен, який ви отримали від @BotFather
 TELEGRAM_TOKEN = "8544620393:AAHj5jjvm-2dZAd04kZAKnq-1mn-E9HEbs0"
+GEMINI_API_KEY = "AIzaSyCWDl5W2ejV5O9o-MAxCgHAJMDalb9VHnM"
+
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
+ai_users = set()
+
 # --- ПОВНА БАЗА ЗНАНЬ ---
 ANSWERS = {
-    "Р1": "👤 **Розділ 1: Вид декларації та звітний період**\n\nУ розділі І «Вид декларації та звітний період» декларації слід обрати позначку «я продовжую виконувати функції держави або органу місцевого самоврядування» та вибрати 2025 рік.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/i-vydy-deklaratsij-ta-poryadok-yih-podannya/",
-    
-    "Р2": "👥 **Розділ 2: Члени сім’ї**\n\nЧленами сім’ї суб’єкта декларування є (ст. 1 Закону, примітка до ст. 46 Закону):\n1) особа, яка перебуває у шлюбі із суб’єктом декларування (чоловік / дружина) станом на останній день звітного періоду, – незалежно від спільного проживання із суб’єктом декларування упродовж звітного періоду;\n2) діти суб’єкта декларування до досягнення ними повноліття, незалежно від їх спільного проживання із суб’єктом декларування упродовж звітного періоду;\n3) будь-які особи, які станом на останній день звітного періоду (за умови спільного проживання із суб’єктом декларування впродовж 30 календарних днів, що передували останньому дню звітного періоду) або сукупно протягом не менше 183 днів протягом року, що передує року подання декларації: спільно проживали; були пов’язані спільним побутом; мали взаємні права та обов’язки із суб’єктом декларування (крім осіб, взаємні права та обов’язки яких не мають характеру сімейних), у тому числі особи, які спільно проживали із суб’єктом декларування, але не перебували у шлюбі. Обов'язково заповнювати всі дані відповідно до документів кожного члена сім'ї.\n\n**Додатково:** Необхідно зазначити всю відому інформацію, що стосується членів сім’ї. Не поспішайте обирати позначку «член сім’ї не надав інформацію». Перед цим обов’язково перевірте всі відкриті джерела (реєстри, бази даних, попередні декларації). НАЗК розцінює безпідставне використання цієї позначки як порушення.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/iii-chleny-sim-yi-sub-yekta-deklaruvannya/",
-    
-    "Р2.1": "🪪 **Розділ 2.1: Додаткова інформація**\n\nЗаповнюйте інформацію відповідно до документів. Зверніть увагу на обов'язковість заповнення унікального номеру запису в ЄДДР присвоюється всім, хто отримував ID-картку або закордонний паспорт. Номер береться: з ID-картки (зазначений на звороті), або з закордонного паспорта (біля персональних даних). Інформація про місце роботи або проходження служби (декларація НАЗК):\n• Код ЄДРПОУ: 40109110 — вказувати ОБОВ’ЯЗКОВО.\n• Категорія: «НЕ ЗАСТОСОВУЄТЬСЯ» ⚠️ (дуже важливо).\n• Найменування органу — обираємо/вказуємо відповідно до коду.\n• Посада — фактична на звітний період.",
-    
-    "Р3": "🏠 **Розділ 3: Об’єкти нерухомості**\n\nУ декларації відображаються відомості про об’єкти нерухомості, що належать суб’єкту декларування та членам його сім’ї на праві приватної власності, включаючи спільну власність, або знаходяться у них в оренді чи на іншому праві користування, незалежно від форми укладення правочину, внаслідок якого набуте таке право Ви обов’язково додаєте обидва об’єкти. Навіть якщо ви не живете за місцем прописки, юридично ви маєте право користування цим майном.\n\n**Як заповнити об'єкт за місцем прописки (якщо ви не власник):**\n• Тип права: «Інше право користування».\n• Опис права: «Зареєстроване місце проживання».\n• Власник: Вказуєте ПІБ та дані особи, на яку оформлений будинок/квартира.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/v-ob-yekty-neruhomosti/",
-    
-    "Р4": "🏗️ **Розділ 4: Об’єкти незавершеного будівництва**\n\nУ розділі 4 «Об’єкти незавершеного будівництва» декларації зазначаються (п. 2-1 ч. 1 ст. 46 Закону):\n• об’єкти незавершеного будівництва;\n• об’єкти, не прийняті в експлуатацію;\n• об’єкти, право власності на які не зареєстроване в установленому законом порядку.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/vi-ob-yekty-nezavershenogo-budivnytstva/",
-    
-    "Р5": "💎 **Розділ 5: Цінне рухоме майно**\n\nПід рухомим майном слід розуміти будь-які матеріальні об’єкти (речі), які можуть бути переміщені без заподіяння їм шкоди (наприклад, ювелірні вироби, персональні або домашні електронні пристрої, одяг, антикваріат, твори мистецтва, меблі, зброя, тварини тощо).\n\nУ декларації зазначається все цінне рухоме майно, вартість якого перевищує визначений Законом поріг декларування (100 ПМ).\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/vii-ruhome-majno-krim-transportnyh-zasobiv/",
-    
-    "Р6": "🚗 **Розділ 6: Транспортні засоби**\n\nЗазначаються всі транспортні засоби, які належали або були у користуванні декларанта чи членів сім’ї у звітному періоді. Вказуються легкові, вантажні авто, мотоцикли, причепи, спецтехніка, водні та повітряні судна.\n\n**Обов’язково зазначається:** власник; тип права; марка, модель, рік випуску; дата набуття права. Користування без права власності (службове авто, авто родичів, знайомих) — декларується обов’язково.\n\n⚠️ **Важливо:** Номери не приховуємо та не скорочуємо назви. Дані беруться з реєстраційних документів або відкритих реєстрів.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/viii-transportni-zasoby/",
-    
-    "Р7": "📈 **Розділ 7: Цінні папери**\n\nДекларуються всі цінні папери (акції, облігації тощо), що належали декларанту або членам сім’ї у звітному періоді. Навіть якщо вони не приносять доходу, їх все одно необхідно зазначати.\n\n⚠️ **Важливо:** Не плутати цінні папери з корпоративними правами (це різні розділи).\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/ih-tsinni-papery/",
-    
-    "Р8": "🏢 **Розділ 8: Корпоративні права (ВАЖЛИВО ДЛЯ ПОЛІЦЕЙСЬКИХ)**\n\nПоліцейським ЗАБОРОНЕНО мати корпоративні права. Якщо корпоративні права набуті до служби, вони повинні бути відчужені або передані в управління. Наявність прав без належного врегулювання — порушення, навіть якщо підприємство не здійснює діяльність.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/h-korporatyvni-prava/",
-    
-    "Р9": "👤 **Розділ 9: Юридичні особи (ВАЖЛИВО ДЛЯ ПОЛІЦЕЙСЬКИХ)**\n\nПоліцейським ЗАБОРОНЕНО бути кінцевим бенефіціарним власником юридичної особи.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/hi-yurydychni-osoby-trasty-abo-inshi-podibni-pravovi-utvorennya-kintsevym-benefitsiarnym-vlasnykom-kontrolerom-yakyh-ye-sub-yekt-deklaruvannya-abo-chleny-jogo-sim-yi/",
-    
-    "Р10": "💡 **Розділ 10: Нематеріальні активи**\n\nВсі активи (патенти, авторські права, торгові марки, ліцензії, комп’ютерні програми), що належать декларанту або членам сім’ї. Вказується власник, назва, дата набуття та вартість.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/hii-nematerialni-aktyvy/",
-    
-    "Р11": "💰 **Розділ 11: Доходи та подарунки**\n\nУсі доходи за звітний період (зарплата, пенсія, подарунки, дивіденди, дохід від продажу майна). Доходи з-за кордону вказуються в гривнях за курсом НБУ на день отримання. \n\n⚠️ Не поспішайте обирати позначку «не надано» без перевірки реєстрів.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/hiii-dohody-u-tomu-chysli-podarunky/",
-    
-    "Р12": "💵 **Розділ 12: Грошові активи**\n\nВсі активи на кінець звітного періоду: готівка, кошти в банках, електронні гаманці. Поліцейські повинні декларувати кошти повністю. Для готівки враховуються всі валюти у сумарному обчисленні.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/hiv-groshovi-aktyvy/",
-    
-    "Р13": "🏦 **Розділ 13: Банківські рахунки**\n\nВсі рахунки (IBAN), що існували на кінець звітного періоду. Вказується назва банку та власник. Суми в цьому розділі не зазначаються.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/xv-bankivski-ta-inshi-finansovi-ustanovy/",
-    
-    "Р14": "📉 **Розділ 14: Фінансові зобов’язання**\n\nВсі кредити, позики, заборгованість за картками. Вказується кредитор, дата набуття та стан виплати на кінець року.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/xvii-vydatky-ta-pravochyny/",
-    
-    "Р15": "🧾 **Розділ 15: Видатки та правочини**\n\nЗначні витрати та купівлі (нерухомість, авто тощо). Необхідно вказувати суму, дату та реквізити документа (договір, чек).\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/xvii-vydatky-ta-pravochyny/",
-    
-    "Р16": "⚠️ **Розділ 16: Обмеження для поліцейських**\n\nПоліцейським заборонено працювати за сумісництвом у будь-яких комерційних або неурядових структурах, окрім випадків, прямо передбачених законодавством (наукова чи педагогічна діяльність).\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/xviii-robota-za-sumisnytstvom/",
-    
-    "ПМ": "📒 **Розміри прожиткового мінімуму для декларації**\n\nДля розрахунків у 2025 році (за звітний період 2024/2025) використовуються показники:\n\n• **1 ПМ = 3 028 грн**\n• **5 ПМ** (поріг суттєвих змін) = **15 140 грн**\n• **50 ПМ** (поріг грошових активів) = **151 400 грн**\n• **100 ПМ** (поріг цінного майна) = **302 800 грн**\n\n🔗 **Докладніше:** https://wiki.nazk.gov.ua/category/deklaruvannya/preambula/"
+    "Р1": "👤 Розділ 1: Вид декларації та звітний період. Обирати «я продовжую виконувати функції держави...» та 2025 рік. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/i-vydy-deklaratsij-ta-poryadok-yih-podannya/",
+    "Р2": "👥 Розділ 2: Члени сім’ї. Чоловік/дружина, неповнолітні діти, та особи, що спільно проживають понад 183 дні. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/iii-chleny-sim-yi-sub-yekta-deklaruvannya/",
+    "Р2.1": "🪪 Розділ 2.1: Додаткова інформація. Код ЄДРПОУ: 40109110 (ОБОВ’ЯЗКОВО). Категорія: «НЕ ЗАСТОСОВУЄТЬСЯ».",
+    "Р3": "🏠 Розділ 3: Об’єкти нерухомості. Власність, оренда або право користування. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/v-ob-yekty-neruhomosti/",
+    "Р4": "🏗️ Розділ 4: Об’єкти незавершеного будівництва. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/vi-ob-yekty-nezavershenogo-budivnytstva/",
+    "Р5": "💎 Розділ 5: Цінне рухоме майно. Понад 100 ПМ. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/vii-ruhome-majno-krim-transportnyh-zasobiv/",
+    "Р6": "🚗 Розділ 6: Транспортні засоби. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/viii-transportni-zasoby/",
+    "Р7": "📈 Розділ 7: Цінні папери. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/ih-tsinni-papery/",
+    "Р8": "🏢 Розділ 8: Корпоративні права. Поліцейським заборонено мати корпоративні права. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/h-korporatyvni-prava/",
+    "Р9": "👤 Розділ 9: Юридичні особи. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/hi-yurydychni-osoby-trasty-abo-inshi-podibni-pravovi-utvorennya-kintsevym-benefitsiarnym-vlasnykom-kontrolerom-yakyh-ye-sub-yekt-deklaruvannya-abo-chleny-jogo-sim-yi/",
+    "Р10": "💡 Розділ 10: Нематеріальні активи. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/hii-nematerialni-aktyvy/",
+    "Р11": "💰 Розділ 11: Доходи та подарунки. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/hiii-dohody-u-tomu-chysli-podarunky/",
+    "Р12": "💵 Розділ 12: Грошові активи. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/hiv-groshovi-aktyvy/",
+    "Р13": "🏦 Розділ 13: Банківські рахунки. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/xv-bankivski-ta-inshi-finansovi-ustanovy/",
+    "Р14": "📉 Розділ 14: Фінансові зобов’язання. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/xvii-vydatky-ta-pravochyny/",
+    "Р15": "🧾 Розділ 15: Видатки та правочини. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/xvii-vydatky-ta-pravochyny/",
+    "Р16": "⚠️ Розділ 16: Обмеження для поліцейських. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/xviii-robota-za-sumisnytstvom/",
+    "ПМ": "📒 Показники 2025: 1 ПМ = 3 028 грн. 50 ПМ = 151 400 грн. 100 ПМ = 302 800 грн. Посилання: https://wiki.nazk.gov.ua/category/deklaruvannya/preambula/"
 }
+
+KNOWLEDGE_BASE_TEXT = "\n".join([f"{k}: {v}" for k, v in ANSWERS.items()])
 
 # --- КЛАВІАТУРИ ---
 def main_menu():
     builder = ReplyKeyboardBuilder()
     builder.row(types.KeyboardButton(text="📅 Терміни"), types.KeyboardButton(text="📂 Розділи декларації"))
-    builder.row(types.KeyboardButton(text="📊 Прожитковий мінімум"), types.KeyboardButton(text="📞 Адмін"))
+    builder.row(types.KeyboardButton(text="📊 Прожитковий мінімум"), types.KeyboardButton(text="🤖 Запитати ШІ"))
+    # НОВА КНОПКА
+    builder.row(types.KeyboardButton(text="📝 Автозаповнення декларації"))
+    builder.row(types.KeyboardButton(text="📞 Адмін"))
     return builder.as_markup(resize_keyboard=True)
 
 def sections_menu():
@@ -66,10 +60,27 @@ def sections_menu():
     builder.row(types.KeyboardButton(text="⬅️ Назад"))
     return builder.as_markup(resize_keyboard=True)
 
-# --- ОБРОБНИКИ КОМАНД ---
+# --- ОБРОБНИКИ ---
+
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.answer("✅ Вітаю! Я бот-помічник з декларування працівників Департаменту поліції охорони.\nОберіть потрібний пункт меню:", reply_markup=main_menu())
+    await message.answer("✅ Вітаю! Я бот-помічник Департаменту поліції охорони.\nОберіть потрібний пункт меню:", reply_markup=main_menu())
+
+@dp.message(F.text == "📝 Автозаповнення декларації")
+async def auto_fill(message: types.Message):
+    await message.answer(
+        "📂 **Інструкція з автозаповнення декларації:**\n\n"
+        "Ви можете завантажити необхідний файл за посиланням нижче:\n"
+        "🔗 [Завантажити файл](https://drive.google.com/file/d/1sYUYtHR34JD07oPRl-lFI_cWeKRXZyoO/view?usp=sharing)",
+        disable_web_page_preview=False,
+        parse_mode="Markdown"
+    )
+
+@dp.message(F.text == "🤖 Запитати ШІ")
+async def ai_mode(message: types.Message):
+    ai_users.add(message.from_user.id)
+    await message.answer("🤖 **Режим ШІ активовано.**\nЗапитуйте що завгодно! Для виходу натисніть **⬅️ Назад**.", 
+                         reply_markup=types.ReplyKeyboardMarkup(keyboard=[[types.KeyboardButton(text="⬅️ Назад")]], resize_keyboard=True))
 
 @dp.message(F.text == "📅 Терміни")
 async def terms(message: types.Message):
@@ -77,7 +88,7 @@ async def terms(message: types.Message):
 
 @dp.message(F.text == "📂 Розділи декларації")
 async def show_sections(message: types.Message):
-    await message.answer("📝 Оберіть номер розділу для отримання докладної інформації:", reply_markup=sections_menu())
+    await message.answer("📝 Оберіть номер розділу:", reply_markup=sections_menu())
 
 @dp.message(F.text == "📊 Прожитковий мінімум")
 async def show_pm(message: types.Message):
@@ -89,21 +100,35 @@ async def contact(message: types.Message):
 
 @dp.message(F.text == "⬅️ Назад")
 async def go_back(message: types.Message):
-    await message.answer("Повертаємось у головне меню:", reply_markup=main_menu())
+    if message.from_user.id in ai_users:
+        ai_users.remove(message.from_user.id)
+    await message.answer("Головне меню:", reply_markup=main_menu())
 
-@dp.message(F.text.startswith("Розділ "))
-async def handle_section(message: types.Message):
-    key = message.text.replace("Розділ ", "Р")
-    if key in ANSWERS:
-        await message.answer(ANSWERS[key], disable_web_page_preview=False)
+@dp.message()
+async def handle_all(message: types.Message):
+    if message.from_user.id in ai_users and message.text:
+        msg = await message.answer("⌛️ *Думаю...*")
+        try:
+            full_prompt = (
+                f"Ти — асистент з декларування для поліцейських. Твоя база знань:\n{KNOWLEDGE_BASE_TEXT}\n\n"
+                f"Питання: {message.text}\n"
+                f"Відповідай коротко, використовуючи ці дані."
+            )
+            response = model.generate_content(full_prompt)
+            await msg.edit_text(response.text)
+        except Exception as e:
+            await msg.edit_text(f"Помилка ШІ: {e}")
+        return
+
+    if message.text.startswith("Розділ "):
+        key = message.text.replace("Розділ ", "Р")
+        if key in ANSWERS:
+            await message.answer(ANSWERS[key])
 
 # --- ЗАПУСК ---
 async def main():
     logging.basicConfig(level=logging.INFO)
-    print("--- БОТ ЗАПУЩЕНИЙ: ВСІ ЦИФРИ ВИПРАВЛЕНО ---")
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
-
     asyncio.run(main())
-
