@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Налаштування Gemini
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-pro')
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
@@ -119,3 +119,4 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
