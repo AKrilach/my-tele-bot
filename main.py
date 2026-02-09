@@ -5,6 +5,7 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 # --- КОНФІГУРАЦІЯ ---
+# УВАГА: Ніколи не розголошуйте свій токен публічно
 TELEGRAM_TOKEN = "8544620393:AAHj5jjvm-2dZAd04kZAKnq-1mn-E9HEbs0"
 
 bot = Bot(token=TELEGRAM_TOKEN)
@@ -29,7 +30,10 @@ ANSWERS = {
     "Р14": "📉 **Розділ 14: Финансові зобов’язання**\n\nВсі кредити, позики, заборгованість за картками. Вказується кредитор, дата набуття та стан виплати на кінець року.\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/xvii-vydatky-ta-pravochyny/",
     "Р15": "🧾 **Розділ 15: Видатки та правочини**\n\nЗначні витрати та купівлі (нерухомість, авто тощо). Необхідно вказувати суму, дату та реквізити документа (договір, чек).\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/xvii-vydatky-ta-pravochyny/",
     "Р16": "⚠️ **Розділ 16: Обмеження для поліцейських**\n\nПоліцейським заборонено працювати за сумісництвом у будь-яких комерційних або неурядових структурах, окрім випадків, прямо передбачених законодавством (наукова чи педагогічна діяльність).\n\n🔗 **Докладніше на Wiki НАЗК:** https://wiki.nazk.gov.ua/category/deklaruvannya/xviii-robota-za-sumisnytstvom/",
-    "ПМ": "📒 **Розміри прожиткового мінімуму для декларації**\n\nДля розрахунків у 2025 році (за звітний період 2024/2025) використовуються показники:\n\n• **1 ПМ = 3 028 грн**\n• **5 ПМ** (поріг суттєвих змін) = **15 140 грн**\n• **50 ПМ** (поріг грошових активів) = **151 400 грн**\n• **100 ПМ** (поріг цінного майна) = **302 800 грн**\n\n🔗 **Докладніше:** https://wiki.nazk.gov.ua/category/deklaruvannya/preambula/"
+    "ПМ": "📒 **Розміри прожиткового мінімуму для декларації**\n\nДля розрахунків у 2025 році (за звітний період 2024/2025) використовуються показники:\n\n• **1 ПМ = 3 028 грн**\n• **5 ПМ** (поріг суттєвих змін) = **15 140 грн**\n• **50 ПМ** (поріг грошових активів) = **151 400 грн**\n• **100 ПМ** (поріг цінного майна) = **302 800 грн**\n\n🔗 **Докладніше:** https://wiki.nazk.gov.ua/category/deklaruvannya/preambula/",
+    "АВТОПЕРЕВІРКА": (
+        "🔍 **Автоперевірка своєї декларації**\n\nШановний користувач! \n\nСкористайся «Автоперевіркою своєї декларації».\n\n1️⃣ Зайди за посиланням та авторизуйся: https://www.integrity-police.pp.ua/Perevirka-deklaratsiyi\n📍 «Ваш підрозділ/орган – обирай **ДЕПАРТАМЕНТ ПОЛІЦІЇ ОХОРОНИ**»\n\n2️⃣ За посиланням https://public.nazk.gov.ua/ в пошуку заповни свої ПІБ, після чого скопіюй посилання на власну Декларацію.\n\n3️⃣ Встав його у поле перевірки попереднього ресурсу, далі натисни «Згенеруй Декларацію», після чого натисни на «Звіт по декларації».\n\n📊 В результаті буде сформований звіт Правильності поданої декларації з можливими помилками, які будуть виділені **червоним кольором**."
+    )
 }
 
 # --- КЛАВІАТУРИ ---
@@ -37,6 +41,7 @@ def main_menu():
     builder = ReplyKeyboardBuilder()
     builder.row(types.KeyboardButton(text="📅 Терміни"), types.KeyboardButton(text="📂 Розділи декларації"))
     builder.row(types.KeyboardButton(text="📊 Прожитковий мінімум"), types.KeyboardButton(text="📝 Автозаповнення декларації"))
+    builder.row(types.KeyboardButton(text="🔍 Автоперевірка своєї декларації")) # НОВА КНОПКА
     builder.row(types.KeyboardButton(text="📞 Адмін"))
     return builder.as_markup(resize_keyboard=True)
 
@@ -75,6 +80,10 @@ async def auto_fill(message: types.Message):
         disable_web_page_preview=False
     )
 
+@dp.message(F.text == "🔍 Автоперевірка своєї декларації") # ОБРОБНИК НОВОЇ КНОПКИ
+async def auto_check(message: types.Message):
+    await message.answer(ANSWERS["АВТОПЕРЕВІРКА"], disable_web_page_preview=True)
+
 @dp.message(F.text == "📞 Адмін")
 async def contact(message: types.Message):
     await message.answer("👤 **Адміністратор Кристина:**\n📞 +380932177380")
@@ -92,10 +101,11 @@ async def handle_section(message: types.Message):
 # --- ЗАПУСК ---
 async def main():
     logging.basicConfig(level=logging.INFO)
-    print("--- БОТ ЗАПУЩЕНИЙ: ВСІ ЦИФРИ ВИПРАВЛЕНО ---")
+    print("--- БОТ ЗАПУЩЕНИЙ: ДОДАНО МОДУЛЬ АВТОПЕРЕВІРКИ ---")
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
-    asyncio.run(main())
-
-
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Бот зупинений")
