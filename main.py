@@ -77,12 +77,10 @@ async def show_sections(message: types.Message):
 
 @dp.message(F.text == "📝 Автозаповнення декларації")
 async def auto_fill(message: types.Message):
-    # Пряме посилання на перегляд файлу
-    link = "https://drive.google.com/file/d/1sYUYtHR34JD07oPRl-lFI_cWeKRXZyoO/view"
+    video_link = "https://drive.google.com/file/d/1sYUYtHR34JD07oPRl-lFI_cWeKRXZyoO/view?usp=sharing"
     await message.answer(
-        f"📝 **Інструкція з автозаповнення:**\n\nСкопіюйте посилання та відкрийте у браузері:\n{link}",
-        parse_mode=ParseMode.MARKDOWN,
-        disable_web_page_preview=False
+        f"📹 **Відеоінструкція з автозаповнення декларації:**\n\nПереглянути відео можна за посиланням:\n{video_link}",
+        parse_mode=ParseMode.MARKDOWN
     )
 
 @dp.message(F.text == "🔍 Автоперевірка своєї декларації")
@@ -96,7 +94,6 @@ async def handle_section(message: types.Message):
         "Розділ 6": "Р6", "Розділ 11": "Р11", "Розділ 12.1": "Р12.1"
     }
     key = key_map.get(message.text)
-    # Якщо тексту немає в мапінгу, даємо загальне посилання на базу знань
     text = ANSWERS.get(key, f"Детальна інформація по {message.text} доступна в [Базі знань НАЗК](https://wiki.nazk.gov.ua/category/deklaruvannya/)")
     await message.answer(text, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
 
