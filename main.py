@@ -5,19 +5,19 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 # --- КОНФІГУРАЦІЯ ---
-TELEGRAM_TOKEN = "8532773844:AAF0I0Mpp6k_wPeoTXtoAlrlcaGXpTs8Qt4"
+TELEGRAM_TOKEN = "8544620393:AAHj5jjvm-2dZAd04kZAKnq-1mn-E9HEbs0"
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 
-# --- ПОВНА БАЗА ЗНАНЬ З УСІМА ВИПРАВЛЕННЯМИ ---
+# --- ПОВНА БАЗА ЗНАНЬ ---
 ANSWERS = {
     "Р1": ("📋 <b>Розділ 1: Вид декларації</b>\n\n"
            "Оберіть тип «Щорічна» та звітний період «2025 рік».\n"
            "🔗 <a href='https://wiki.nazk.gov.ua/category/deklaruvannya/i-vydy-deklaratsij-ta-poryadok-yih-podannya/'>Інструкція НАЗК</a>"),
 
     "Р2": ("👤 <b>Розділ 2: Суб'єкт декларування</b>\n\n"
-           "Ваші дані: ПІБ, РНОКПП, УНЗР. Код ЄДРПОУ УПО Полтавщини: <b>40109042</b>.\n"
+           "Ваші дані: ПІБ, РНОКПП, УНЗР. Код ЄДРПОУ Департаменту поліції охорони: <b>40109110</b>.\n"
            "⚠️ <b>ВАЖЛИВО:</b> У полі 'Категорія посади' обов'язково обирайте — <b>НЕ ЗАСТОСОВУЄТЬСЯ</b>.\n"
            "🔗 <a href='https://wiki.nazk.gov.ua/category/deklaruvannya/ii-vidomosti-pro-sub-yekta-deklaruvannya/'>Інструкція НАЗК</a>"),
 
@@ -63,7 +63,7 @@ ANSWERS = {
 
     "Р12": ("💵 <b>Розділ 12: Грошові активи</b>\n\n"
             "Готівка та картки ваші + сім'ї, якщо сукупно > 50 ПМ.\n"
-            "🔗 <a href='https://wiki.nazk.gov.ua/category/deklaruvannya/hiv-groshovi-aktyvy/'>Інструкція НАЗК</a>"),
+           "🔗 <a href='https://wiki.nazk.gov.ua/category/deklaruvannya/hiv-groshovi-aktyvy/'>Інструкція НАЗК</a>"),
 
     "Р12.1": ("💳 <b>Розділ 12.1: Банківські установи</b>\n\n"
               "⚠️ <b>ТІЛЬКИ НАЗВИ БАНКІВ:</b> Обираємо зі списку банки (Приват, Ощад тощо), де відкрито рахунки у вас або сім'ї. IBAN писати не треба.\n"
@@ -86,12 +86,14 @@ ANSWERS = {
             "🔗 <a href='https://wiki.nazk.gov.ua/category/deklaruvannya/xix-vhodzhennya-do-kerivnyh-revizijnyh-chy-naglyadovyh-organiv/'>Інструкція НАЗК</a>")
 }
 
-# --- КЛАВІАТУРИ ТА ОБРОБНИКИ (ПОВНИЙ СПИСОК) ---
+# --- КЛАВІАТУРИ ---
 def main_menu():
     builder = ReplyKeyboardBuilder()
     builder.row(types.KeyboardButton(text="📅 Терміни подання"))
-    builder.row(types.KeyboardButton(text="👤 Адмін"), types.KeyboardButton(text="⚖️ Відповідальність"))
+    builder.row(types.KeyboardButton(text="🤖 Автозаповнення декларації"))
+    builder.row(types.KeyboardButton(text="🔍 Автоперевірка своєї декларації"))
     builder.row(types.KeyboardButton(text="📂 Розділи декларування"))
+    builder.row(types.KeyboardButton(text="⚖️ Відповідальність"), types.KeyboardButton(text="👤 Адміністратор"))
     return builder.as_markup(resize_keyboard=True)
 
 def sections_menu():
@@ -105,10 +107,31 @@ def sections_menu():
     builder.row(types.KeyboardButton(text="⬅️ Назад"))
     return builder.as_markup(resize_keyboard=True)
 
+# --- ОБРОБНИКИ ---
+
 @dp.message(Command("start"))
 @dp.message(F.text == "⬅️ Назад")
 async def start(message: types.Message):
     await message.answer("📋 <b>Головне меню</b>. Оберіть пункт:", reply_markup=main_menu(), parse_mode="HTML")
+
+@dp.message(F.text == "🤖 Автозаповнення декларації")
+async def auto_fill(message: types.Message):
+    await message.answer("🔗 <b>Посилання на файл автозаповнення:</b>\nhttps://drive.google.com/file/d/1sYUYtHR34JD07oPRl-lFI_cWeKRXZyoO/view?usp=sharing", parse_mode="HTML")
+
+@dp.message(F.text == "🔍 Автоперевірка своєї декларації")
+async def auto_check(message: types.Message):
+    text = (
+        "🔍 <b>Автоперевірка своєї декларації</b>\n\n"
+        "Шановний користувач! \n\n"
+        "Скористайся «Автоперевіркою своєї декларації».\n\n"
+        "1️⃣ Зайди за посиланням та авторизуйся:\n"
+        "https://www.integrity-police.pp.ua/Perevirka-deklaratsiyi\n"
+        "📍 «Ваш підрозділ/орган – обирай <b>ДЕПАРТАМЕНТ ПОЛІЦІЇ ОХОРОНИ</b>»\n\n"
+        "2️⃣ За посиланням https://public.nazk.gov.ua/ в пошуку заповни свої ПІБ, після чого скопіюй посилання на власну Декларацію.\n\n"
+        "3️⃣ Встав його у поле перевірки попереднього ресурсу, далі натисни «Згенеруй Декларацію», після чого натисни на «Звіт по декларації».\n\n"
+        "📊 В результаті буде сформований звіт Правильності поданої декларації з можливими помилками, які будуть виділені <b>червоним кольором</b>."
+    )
+    await message.answer(text, parse_mode="HTML", disable_web_page_preview=True)
 
 @dp.message(F.text == "📂 Розділи декларування")
 async def show_sections(message: types.Message):
@@ -124,17 +147,28 @@ async def handle_section(message: types.Message):
 async def terms(message: types.Message):
     await message.answer("📅 <b>Щорічна декларація за 2025 рік</b> подається до 31 березня 2026 року включно.", parse_mode="HTML")
 
-@dp.message(F.text == "👤 Адмін")
+@dp.message(F.text == "👤 Адміністратор")
 async def contact(message: types.Message):
-    await message.answer("👤 <b>Адміністратор Альона</b>\n📞 <code>0660787241</code>", parse_mode="HTML")
+    await message.answer("👤 <b>Адміністратор Христина</b>\n📞 <code>0932177380</code>", parse_mode="HTML")
 
 @dp.message(F.text == "⚖️ Відповідальність")
 async def resp(message: types.Message):
-    await message.answer("⚖️ <b>Відповідальність:</b> Адмін, Дисциплінарна, Кримінальна.", parse_mode="HTML")
+    text = (
+        "⚖️ <b>Відповідальність за завідомо недостовірні відомості в декларації:</b>\n\n"
+        "🔸 <b>Кримінальна:</b> понад 750 ПМ* (понад 2 271 000 грн у 2025 році; понад 2 496 000 грн у 2026 році).\n\n"
+        "🔸 <b>Адміністративна:</b> від 150 до 750 ПМ* (від 454 200 грн до 2 271 000 грн у 2025 році; від 499 200 грн до 2 496 000 грн у 2026 році).\n\n"
+        "🔸 <b>Дисциплінарна (догана, сувора догана, звільнення тощо):</b> до 150 ПМ* (до 454 200 грн у 2025 році; до 499 200 грн у 2026 році).\n\n"
+        "<i>* 1 ПМ у 2025 році = 3028 грн</i>\n"
+        "<i>  1 ПМ у 2026 році = 3328 грн</i>"
+    )
+    await message.answer(text, parse_mode="HTML")
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
-if _name_ == '_main_':
+if __name__ == "__main__":
     asyncio.run(main())
